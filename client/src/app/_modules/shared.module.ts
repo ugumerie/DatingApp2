@@ -2,19 +2,27 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BsDropdownModule } from 'ngx-bootstrap/dropdown';
 import { ToastrModule } from 'ngx-toastr';
+import { TabsModule } from 'ngx-bootstrap/tabs';
+import { NgxGalleryModule } from '@kolkov/ngx-gallery';
 
 @NgModule({
   declarations: [],
-  imports: [// modulues that are not angular based are shared
+  imports: [
+    // modulues that are not angular based are shared
     CommonModule,
     BsDropdownModule.forRoot(),
     ToastrModule.forRoot({
-      positionClass: 'toast-bottom-right'
-    })
+      positionClass: 'toast-bottom-right',
+    }),
+    TabsModule.forRoot(),
+    NgxGalleryModule,
   ],
-  exports: [// these modules will available throughtout the project - no configuration
+  exports: [
+    // these modules will available throughtout the project - no configuration
     BsDropdownModule,
-    ToastrModule
-  ]
+    ToastrModule,
+    TabsModule,
+    NgxGalleryModule,
+  ],
 })
-export class SharedModule { }
+export class SharedModule {}
