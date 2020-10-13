@@ -4,6 +4,7 @@ import { BsDropdownModule } from 'ngx-bootstrap/dropdown';
 import { ToastrModule } from 'ngx-toastr';
 import { TabsModule } from 'ngx-bootstrap/tabs';
 import { NgxGalleryModule } from '@kolkov/ngx-gallery';
+import { FileUploadModule } from 'ng2-file-upload';
 
 @NgModule({
   declarations: [],
@@ -16,6 +17,7 @@ import { NgxGalleryModule } from '@kolkov/ngx-gallery';
     }),
     TabsModule.forRoot(),
     NgxGalleryModule,
+    FileUploadModule
   ],
   exports: [
     // these modules will available throughtout the project - no configuration
@@ -23,6 +25,7 @@ import { NgxGalleryModule } from '@kolkov/ngx-gallery';
     ToastrModule,
     TabsModule,
     NgxGalleryModule,
+    FileUploadModule
   ],
 })
 export class SharedModule {}
