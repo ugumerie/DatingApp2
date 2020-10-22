@@ -46,7 +46,7 @@ namespace API.Data
             query = userParams.OrderBy switch
             {
                 "created" => query.OrderByDescending(u => u.DateCreated),
-                _ => query.OrderByDescending(u => u.LastActive)
+                _ => query.OrderByDescending(u => u.LastActive)// default of switch statement
             };
 
             return await PagedList<MemberDto>.CreateAsync(

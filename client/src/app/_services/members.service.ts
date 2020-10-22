@@ -19,8 +19,11 @@ export class MembersService {
   user: User;
   userParams: UserParams;
 
-  constructor(private http: HttpClient, private accountService: AccountService) {
-    this.accountService.currentUser$.pipe(take(1)).subscribe(user => {
+  constructor(
+    private http: HttpClient,
+    private accountService: AccountService
+  ) {
+    this.accountService.currentUser$.pipe(take(1)).subscribe((user) => {
       this.user = user;
       this.userParams = new UserParams(user);
     });
@@ -57,13 +60,16 @@ export class MembersService {
     params = params.append('orderBy', userParams.orderBy);
 
     // make the request if nothing is in the members[], {observe}, we will have to specify the .body
-    return this.getPaginatedResult<Member[]>(this.baseUrl + 'users', params)
-      .pipe(map(res => {
+    return this.getPaginatedResult<Member[]>(
+      this.baseUrl + 'users',
+      params
+    ).pipe(
+      map((res) => {
         this.memberCache.set(Object.values(userParams).join('-'), res);
         return res;
-      }));
+      })
+    );
   }
-
 
   getMember(username: string): Observable<Member> {
     // flaten from Map() and find the member by username
@@ -95,7 +101,28 @@ export class MembersService {
     return this.http.delete(this.baseUrl + 'users/delete-photo/' + photoId);
   }
 
-  private getPaginatedResult<T>(url: string, params: HttpParams): Observable<PaginatedResult<T>> {
+  addLike(username: string): Observable<any> {
+    return this.http.post(this.baseUrl + 'likes/' + username, {});
+  }
+
+  getLikes(
+    predicate: string,
+    pageNumber: number,
+    pageSize: number
+  ): Observable<PaginatedResult<Partial<Member[]>>> {
+    let params = this.getPaginationHeaders(pageNumber, pageSize);
+    params = params.append('predicate', predicate);
+
+    return this.getPaginatedResult<Partial<Member[]>>(
+      this.baseUrl + 'likes',
+      params
+    );
+  }
+
+  private getPaginatedResult<T>(
+    url: string,
+    params: HttpParams
+  ): Observable<PaginatedResult<T>> {
     const paginatedResult: PaginatedResult<T> = new PaginatedResult<T>();
 
     return this.http
