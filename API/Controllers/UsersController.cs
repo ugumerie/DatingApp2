@@ -47,7 +47,7 @@ namespace API.Controllers
             return Ok(users);
         }
 
-        // api/users/3 = Name prop is the route name
+        // api/users/ella = Name prop is the route name
         [HttpGet("{username}", Name = "GetUser")]
         public async Task<ActionResult<MemberDto>> GetUser(string username)
         {

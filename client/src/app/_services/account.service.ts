@@ -39,6 +39,9 @@ export class AccountService {
   }
 
   setCurrentUser(user: User): void {
+    user.roles = [];
+    const roles = this.getDecodedToken(user.token).role;
+    Array.isArray(roles) ? user.roles = roles : user.roles.push(roles);
     localStorage.setItem('user', JSON.stringify(user));
 
      // passing the observable values that will be emitted in the next parameter
@@ -48,6 +51,10 @@ export class AccountService {
   logout(): void {
     localStorage.removeItem('user');
     this.currentUserSource.next(null);
+  }
+
+  getDecodedToken(token: string): any {
+    return JSON.parse(atob(token.split('.')[1]));
   }
 }
 
