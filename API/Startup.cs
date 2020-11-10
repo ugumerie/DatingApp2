@@ -8,6 +8,7 @@ using API.Extensions;
 using API.Interfaces;
 using API.Middleware;
 using API.Services;
+using API.SignalR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -43,6 +44,7 @@ namespace API
 
             //An extension mthd that contains all of our Identity services eg authentication
             services.AddIdentityServices(_config);
+            services.AddSignalR();
 
             services.AddSwaggerGen(c =>
             {
@@ -69,7 +71,10 @@ namespace API
 
             // AllowAnyHeader: such as authentication from client app
             // AllowAnyMethod: such as PUT, GET, POST, DELETE..
-            app.UseCors(policy => policy.AllowAnyHeader().AllowAnyMethod().WithOrigins("https://localhost:4200"));
+            app.UseCors(policy => policy.AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials()//due to the way signalr sends up its token via query string
+                .WithOrigins("https://localhost:4200"));
 
             app.UseAuthentication();
 
@@ -78,6 +83,8 @@ namespace API
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapHub<PresenceHub>("hubs/presence");
+                endpoints.MapHub<MessageHub>("hubs/message");
             });
         }
     }
