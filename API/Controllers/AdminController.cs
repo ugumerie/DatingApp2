@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using API.Entities;
+using API.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -11,9 +12,14 @@ namespace API.Controllers
     public class AdminController : BaseApiController
     {
         private readonly UserManager<AppUser> _userManager;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IPhotoService _photoService;
 
-        public AdminController(UserManager<AppUser> userManager)
+        public AdminController(UserManager<AppUser> userManager, IUnitOfWork unitOfWork,
+             IPhotoService photoService)
         {
+            _photoService = photoService;
+            _unitOfWork = unitOfWork;
             _userManager = userManager;
         }
 
@@ -25,7 +31,8 @@ namespace API.Controllers
                 .Include(p => p.UserRoles)
                 .ThenInclude(p => p.Role)
                 .OrderBy(u => u.UserName)
-                .Select(u => new {
+                .Select(u => new
+                {
                     u.Id,
                     Username = u.UserName,
                     Roles = u.UserRoles.Select(r => r.Role.Name).ToList()
@@ -42,26 +49,67 @@ namespace API.Controllers
             var selectedRoles = roles.Split(",").ToArray();
             var user = await _userManager.FindByNameAsync(username);
 
-            if(user == null) return NotFound("Could not find user");
+            if (user == null) return NotFound("Could not find user");
 
             var userRoles = await _userManager.GetRolesAsync(user);
 
             /*The Except() method requires two collections. It returns a new collection with 
             elements from the first collection which do not exist in the second collection*/
             var result = await _userManager.AddToRolesAsync(user, selectedRoles.Except(userRoles));
-            if(!result.Succeeded) return BadRequest("Failed to add to roles");
+            if (!result.Succeeded) return BadRequest("Failed to add to roles");
 
             result = await _userManager.RemoveFromRolesAsync(user, userRoles.Except(selectedRoles));
-            if(!result.Succeeded) return BadRequest("Failed to remove from roles");
+            if (!result.Succeeded) return BadRequest("Failed to remove from roles");
 
             return Ok(await _userManager.GetRolesAsync(user));
         }
 
         [Authorize(Policy = "ModeratePhotoRole")]
         [HttpGet("photos-to-moderate")]
-        public ActionResult GetPhotosForModeration()
+        public async Task<ActionResult> GetPhotosForModeration()
         {
-            return Ok("Admins or moderators can see this");
+            var approvalPhotos = await _unitOfWork.PhotoRepository.GetUnapprovedPhotos();
+            return Ok(approvalPhotos);
+        }
+
+        [Authorize(Policy = "ModeratePhotoRole")]
+        [HttpPost("approve-photo/{photoId}")]
+        public async Task<ActionResult> ApprovePhoto(int photoId)
+        {
+            var photo = await _unitOfWork.PhotoRepository.GetPhotoById(photoId);
+
+            if (photo == null) return NotFound("Could not find photo.");
+
+            photo.IsApproved = true;
+
+            var user = await _unitOfWork.UserRepository.GetUserByPhotoId(photoId);
+            
+            if(user.Photos.Count(p => p.IsMain) == 0) photo.IsMain = true;
+
+            if (await _unitOfWork.Complete()) return NoContent();
+
+            return BadRequest("Cannot approve photo.");
+        }
+
+        [Authorize(Policy = "ModeratePhotoRole")]
+        [HttpPost("reject-photo/{photoId}")]
+        public async Task<ActionResult> RejectPhoto(int photoId)
+        {
+            var photo = await _unitOfWork.PhotoRepository.GetPhotoById(photoId);
+
+            if (photo == null) return NotFound("Could not find photo.");
+
+            if (!string.IsNullOrEmpty(photo.PublicId))
+            {
+                var result = await _photoService.DeletePhotoAsync(photo.PublicId);
+                if (result.Error != null) return BadRequest(result.Error.Message);
+            }
+
+            _unitOfWork.PhotoRepository.RemovePhoto(photo);
+
+            if (await _unitOfWork.Complete()) return NoContent();
+
+            return BadRequest("Cannot reject photo");
         }
     }
 }

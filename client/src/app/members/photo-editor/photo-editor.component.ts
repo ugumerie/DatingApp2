@@ -5,6 +5,7 @@ import { Member } from 'src/app/_models/member';
 import { Photo } from 'src/app/_models/photo';
 import { User } from 'src/app/_models/user';
 import { AccountService } from 'src/app/_services/account.service';
+import { ConfirmService } from 'src/app/_services/confirm.service';
 import { MembersService } from 'src/app/_services/members.service';
 import { environment } from 'src/environments/environment';
 
@@ -22,7 +23,8 @@ export class PhotoEditorComponent implements OnInit {
 
   constructor(
     private accountService: AccountService,
-    private memberService: MembersService
+    private memberService: MembersService,
+    private confirmService: ConfirmService
   ) {
     this.accountService.currentUser$
       .pipe(take(1))
@@ -54,9 +56,20 @@ export class PhotoEditorComponent implements OnInit {
   }
 
   deletePhoto(photoId: number): void {
-    this.memberService.deletePhoto(photoId).subscribe(() => {
-      this.member.photos = this.member.photos.filter((x) => x.id !== photoId);
-    });
+    this.confirmService
+      .confirm(
+        'Confirm Remove',
+        'Are you sure you want to remove this photo? This cannot be undone.'
+      )
+      .subscribe((result) => {
+        if (result) {
+          this.memberService.deletePhoto(photoId).subscribe(() => {
+            this.member.photos = this.member.photos.filter(
+              (x) => x.id !== photoId
+            );
+          });
+        }
+      });
   }
 
   initializeUploader(): void {
